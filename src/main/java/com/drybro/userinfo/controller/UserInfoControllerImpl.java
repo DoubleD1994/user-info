@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.drybro.userinfo.model.UserInfo;
 import com.drybro.userinfo.repository.UserRepository;
+import com.drybro.userinfo.service.PasswordGeneratorService;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 public class UserInfoControllerImpl implements UserInfoController {
-
-	//TODO: Add appropriate response on error
 
 	private final UserRepository userRepository;
 
@@ -47,6 +46,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@PostMapping()
 	@ResponseStatus(HttpStatus.CREATED)
 	public void createUser( @RequestBody final UserInfo userInfo ) {
+		userInfo.setPassword( PasswordGeneratorService.generatePassword() );
 		userRepository.save( userInfo );
 		log.info( "USER CREATED: {}", userInfo );
 	}

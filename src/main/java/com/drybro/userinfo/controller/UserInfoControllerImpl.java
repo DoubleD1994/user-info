@@ -2,6 +2,7 @@ package com.drybro.userinfo.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.drybro.userinfo.model.UserInfo;
 import com.drybro.userinfo.repository.UserRepository;
@@ -31,7 +33,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 
 	//TODO: Add appropriate response on error
 
-	UserRepository userRepository;
+	private final UserRepository userRepository;
 
 	@Override
 	@GetMapping(value = ALL_USERS_PATH)
@@ -51,14 +53,14 @@ public class UserInfoControllerImpl implements UserInfoController {
 
 	@Override
 	@GetMapping()
-	public UserInfo getUserByEmail(@RequestParam("email") String email) {
-		return userRepository.findUserInfoByEmail( email ).orElseThrow();
+	public UserInfo getUserByEmail(@RequestParam("email") final String email) {
+		return findUserByEmail(email);
 	}
 
 	@Override
 	@GetMapping(value = USER_ID_PATH)
 	public UserInfo getUserById( @PathVariable("id") final Long userId ) {
-		return userRepository.findById( userId ).orElseThrow();
+		return findUserById( userId );
 	}
 
 	@Override
@@ -66,7 +68,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	public void updateUser( @PathVariable("id") final Long userId,
 			@RequestBody final UserInfo updatedUserInfo ) {
-		UserInfo user = userRepository.findById( userId ).orElseThrow();
+		UserInfo user = findUserById( userId );
 		updateUserInfo( user, updatedUserInfo );
 		log.info( "USER WITH ID {} UPDATED", userId );
 	}
@@ -82,13 +84,13 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@Override
 	@GetMapping(value = USER_EMAIL_PATH)
 	public String getUserEmail( @PathVariable("id") final Long userId ) {
-		return userRepository.findById( userId ).orElseThrow().getEmail();
+		return findUserById( userId ).getEmail();
 	}
 
 	@Override
 	@GetMapping(value = USER_EMAIL_PREFERENCES)
 	public Boolean getUserEmailPreferences( @PathVariable("id") final Long userId ) {
-		return userRepository.findById( userId ).orElseThrow().getAllowsEmail();
+		return findUserById( userId ).getAllowsEmail();
 	}
 
 	@Override
@@ -96,10 +98,28 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	public void updateUserEmailPreferenves( @PathVariable("id") final Long userId,
 			@RequestParam("allowsEmail") final Boolean allowsEmail ) {
-		UserInfo user = userRepository.findById( userId ).orElseThrow();
+		UserInfo user = findUserById( userId );
 		user.setAllowsEmail( allowsEmail );
 		userRepository.save( user );
 		log.info( "USER WITH ID {} EMAIL PREFERENCES UPDATED: {}", userId, allowsEmail );
+	}
+
+	private UserInfo findUserById(final Long userId) {
+		try {
+			return userRepository.findById( userId ).orElseThrow();
+		} catch ( NoSuchElementException nsee ) {
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND,
+					"User with ID " + userId + "  not found", nsee );
+		}
+	}
+
+	private UserInfo findUserByEmail(final String email) {
+		try {
+			return userRepository.findUserInfoByEmail( email ).orElseThrow();
+		} catch ( NoSuchElementException nsee ) {
+			throw new ResponseStatusException( HttpStatus.NOT_FOUND,
+					"No user found with email address: " + email, nsee );
+		}
 	}
 
 	private void updateUserInfo( final UserInfo userInfo, final UserInfo updatedUserInfo ) {

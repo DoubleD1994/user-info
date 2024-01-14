@@ -155,4 +155,57 @@ public class UserInfoControllerImplTest {
 				() -> userInfoController.updateUser( 5l, new UserInfo() ) );
 	}
 
+	@Test
+	void deleteUser_HappyPath() {
+		userInfoController.deleteUser( userInfoOne.getId() );
+		verify( userRepository, times( 1 ) ).deleteById( userInfoOne.getId() );
+	}
+
+	@Test
+	void getUserEmail_HappyPath() {
+		when(userRepository.findById( userInfoOne.getId() )).thenReturn( Optional.of( userInfoOne ) );
+
+		String returnedEmail = userInfoController.getUserEmail( userInfoOne.getId() );
+		assertThat( returnedEmail ).isEqualTo( userInfoOne.getEmail() );
+	}
+
+	@Test
+	void getUserEmail_UserNotFoundThrowsResponseStatusException() {
+		assertThrows( ResponseStatusException.class,
+				() -> userInfoController.getUserEmail( 5l ) );
+	}
+
+	@Test
+	void getUserEmailPreferences_HappyPath() {
+		when(userRepository.findById( userInfoOne.getId() )).thenReturn( Optional.of( userInfoOne ) );
+
+		Boolean returnedEmailPreferences = userInfoController.getUserEmailPreferences( userInfoOne.getId() );
+		assertThat( returnedEmailPreferences ).isEqualTo( userInfoOne.getAllowsEmail() );
+	}
+
+	@Test
+	void getUserEmailPreferences_UserNotFoundThrowsResponseStatusException() {
+		assertThrows( ResponseStatusException.class,
+				() -> userInfoController.getUserEmailPreferences( 5l ) );
+	}
+
+	@Test
+	void updateUserEmailPreferences_HappyPath() {
+		when(userRepository.findById( userInfoOne.getId() )).thenReturn( Optional.of( userInfoOne ) );
+
+		UserInfo updatedUserInfo = userInfoOne;
+		updatedUserInfo.setAllowsEmail( false );
+
+		userInfoController.updateUserEmailPreferenves(userInfoOne.getId(), false);
+
+		verify( userRepository, times(1) ).findById( userInfoOne.getId() );
+		verify( userRepository, times( 1 ) ).save( updatedUserInfo );
+	}
+
+	@Test
+	void updateUserEmailPreferences_UserNotFoundThrowsResponseStatusException() {
+		assertThrows( ResponseStatusException.class,
+				() -> userInfoController.updateUserEmailPreferenves( 5l, false ) );
+	}
+
 }

@@ -5,31 +5,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.drybro.userinfo.model.UserInfo;
 import com.drybro.userinfo.repository.UserRepository;
-import com.drybro.userinfo.service.PasswordGeneratorService;
 
-import jakarta.validation.constraints.Null;
 
 @SpringBootTest
 public class UserInfoControllerImplTest {
@@ -87,7 +77,7 @@ public class UserInfoControllerImplTest {
 	@Test
 	void createUser_NullUserThrowsException() {
 		assertThrows( NullPointerException.class,
-				() -> userInfoController.createUser( new UserInfo() ) );
+				() -> userInfoController.createUser( null ) );
 	}
 
 	@Test
@@ -101,6 +91,7 @@ public class UserInfoControllerImplTest {
 		when( userRepository.findUserInfoByEmail( userInfoOne.getEmail() ) ).thenReturn(
 				Optional.of( userInfoOne ) );
 		UserInfo returnedUser = userInfoController.getUserByEmail( userInfoOne.getEmail() );
+		verify( userRepository, times(1) ).findUserInfoByEmail( userInfoOne.getEmail() );
 		assertThat( returnedUser.getId() ).isEqualTo( userInfoOne.getId() );
 	}
 
@@ -122,5 +113,46 @@ public class UserInfoControllerImplTest {
 				() -> userInfoController.getUserByEmail( "" ) );
 	}
 
+	@Test
+	void getUserById_HappyPath() {
+		when( userRepository.findById( userInfoOne.getId() ) ).thenReturn(
+				Optional.of( userInfoOne ) );
+		UserInfo returnedUser = userInfoController.getUserById( userInfoOne.getId() );
+		verify( userRepository, times(1) ).findById( userInfoOne.getId() );
+		assertThat( returnedUser.getId() ).isEqualTo( userInfoOne.getId() );
+	}
+
+	@Test
+	void getUserById_UserNotFoundThrowsResponseStatusException() {
+		assertThrows( ResponseStatusException.class,
+				() -> userInfoController.getUserById( 5l ) );
+	}
+
+	@Test
+	void getUserById_NullValueThrowsResponseStatusException() {
+		assertThrows( ResponseStatusException.class,
+				() -> userInfoController.getUserById( null ) );
+	}
+
+	@Test
+	void updateUser_HappyPath() {
+		when( userRepository.findById( userInfoOne.getId() ) ).thenReturn(
+				Optional.of( userInfoOne ) );
+
+		UserInfo updateUserInfo = userInfoOne;
+		updateUserInfo.setFirstName( "Updated" );
+		updateUserInfo.setSurname( "Name" );
+
+		userInfoController.updateUser(userInfoOne.getId(), updateUserInfo);
+
+		verify( userRepository, times(1) ).findById( userInfoOne.getId() );
+		verify( userRepository, times( 1 ) ).save( updateUserInfo );
+	}
+
+	@Test
+	void updateUser_UserNotFoundThrowsResponseStatusException() {
+		assertThrows( ResponseStatusException.class,
+				() -> userInfoController.updateUser( 5l, new UserInfo() ) );
+	}
 
 }

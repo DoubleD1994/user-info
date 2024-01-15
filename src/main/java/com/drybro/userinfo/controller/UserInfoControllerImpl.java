@@ -1,5 +1,7 @@
 package com.drybro.userinfo.controller;
 
+import static com.drybro.userinfo.controller.UserInfoController.USER_INFO_PATH;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -27,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Validated
 @RestController
-@RequestMapping(path = "/user-info", produces = "application/json")
+@RequestMapping(path = USER_INFO_PATH, produces = "application/json")
 @AllArgsConstructor
 @Slf4j
 public class UserInfoControllerImpl implements UserInfoController {

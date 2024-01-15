@@ -11,6 +11,7 @@ import com.drybro.userinfo.model.UserInfo;
 
 public interface UserInfoController {
 
+	String USER_INFO_PATH = "/user-info";
 	String ALL_USERS_PATH = "/all-users";
 
 	String USER_ID_PATH = "/{id}";

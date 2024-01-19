@@ -55,20 +55,20 @@ public class UserInfoControllerImpl implements UserInfoController {
 
 	@Override
 	@GetMapping()
-	public UserInfo getUserByEmail(@RequestParam("email") final String email) {
+	public UserInfo getUserByEmail(@RequestParam final String email) {
 		return findUserByEmail(email);
 	}
 
 	@Override
 	@GetMapping(value = USER_ID_PATH)
-	public UserInfo getUserById( @PathVariable("id") final Long userId ) {
+	public UserInfo getUserById( @PathVariable final Long userId ) {
 		return findUserById( userId );
 	}
 
 	@Override
 	@PutMapping(USER_ID_PATH)
 	@ResponseStatus(HttpStatus.ACCEPTED)
-	public void updateUser( @PathVariable("id") final Long userId,
+	public void updateUser( @PathVariable final Long userId,
 			@RequestBody final UserInfo updatedUserInfo ) {
 		UserInfo user = findUserById( userId );
 		updateUserInfo( user, updatedUserInfo );
@@ -78,28 +78,28 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@Override
 	@DeleteMapping(USER_ID_PATH)
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void deleteUser( @PathVariable("id") final Long userId ) {
+	public void deleteUser( @PathVariable final Long userId ) {
 		userRepository.deleteById( userId );
 		log.info( "USER DELETED {}", userId );
 	}
 
 	@Override
 	@GetMapping(value = USER_EMAIL_PATH)
-	public String getUserEmail( @PathVariable("id") final Long userId ) {
+	public String getUserEmail( @PathVariable final Long userId ) {
 		return findUserById( userId ).getEmail();
 	}
 
 	@Override
 	@GetMapping(value = USER_EMAIL_PREFERENCES)
-	public Boolean getUserEmailPreferences( @PathVariable("id") final Long userId ) {
+	public Boolean getUserEmailPreferences( @PathVariable final Long userId ) {
 		return findUserById( userId ).getAllowsEmail();
 	}
 
 	@Override
 	@PutMapping(value = USER_EMAIL_PREFERENCES)
 	@ResponseStatus(HttpStatus.ACCEPTED)
-	public void updateUserEmailPreferenves( @PathVariable("id") final Long userId,
-			@RequestParam("allowsEmail") final Boolean allowsEmail ) {
+	public void updateUserEmailPreferenves( @PathVariable final Long userId,
+			@RequestParam final Boolean allowsEmail ) {
 		UserInfo user = findUserById( userId );
 		user.setAllowsEmail( allowsEmail );
 		userRepository.save( user );

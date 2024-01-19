@@ -14,11 +14,11 @@ public interface UserInfoController {
 	String USER_INFO_PATH = "/user-info";
 	String ALL_USERS_PATH = "/all-users";
 
-	String USER_ID_PATH = "/{id}";
+	String USER_ID_PATH = "/{userIid}";
 
-	String USER_EMAIL_PATH = "/{id}/email";
+	String USER_EMAIL_PATH = "/{userId}/email";
 
-	String USER_EMAIL_PREFERENCES = "/{id}/email/preferences";
+	String USER_EMAIL_PREFERENCES = "/{userId}/email/preferences";
 
 	@GetMapping(ALL_USERS_PATH)
 	List<UserInfo> getAllUsers();

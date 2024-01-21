@@ -196,7 +196,7 @@ public class UserInfoControllerImplTest {
 		UserInfo updatedUserInfo = userInfoOne;
 		updatedUserInfo.setAllowsEmail( false );
 
-		userInfoController.updateUserEmailPreferenves(userInfoOne.getId(), false);
+		userInfoController.updateUserEmailPreferences(userInfoOne.getId(), false);
 
 		verify( userRepository, times(1) ).findById( userInfoOne.getId() );
 		verify( userRepository, times( 1 ) ).save( updatedUserInfo );
@@ -205,7 +205,7 @@ public class UserInfoControllerImplTest {
 	@Test
 	void updateUserEmailPreferences_UserNotFoundThrowsResponseStatusException() {
 		assertThrows( ResponseStatusException.class,
-				() -> userInfoController.updateUserEmailPreferenves( 5l, false ) );
+				() -> userInfoController.updateUserEmailPreferences( 5l, false ) );
 	}
 
 }

@@ -98,7 +98,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@Override
 	@PutMapping(value = USER_EMAIL_PREFERENCES)
 	@ResponseStatus(HttpStatus.ACCEPTED)
-	public void updateUserEmailPreferenves( @PathVariable final Long userId,
+	public void updateUserEmailPreferences( @PathVariable final Long userId,
 			@RequestParam final Boolean allowsEmail ) {
 		final UserInfo user = findUserById( userId );
 		user.setAllowsEmail( allowsEmail );

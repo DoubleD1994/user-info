@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 
@@ -30,21 +31,21 @@ public interface UserInfoController {
 	UserInfo getUserByEmail(String email);
 
 	@GetMapping(USER_ID_PATH)
-	UserInfo getUserById(Long userId);
+	UserInfo getUserById(@PathVariable Long userId);
 
 	@PutMapping(USER_ID_PATH)
-	void updateUser(Long userId, UserInfo userInfo );
+	void updateUser(@PathVariable Long userId, UserInfo userInfo );
 
 	@DeleteMapping(USER_ID_PATH)
-	void deleteUser(Long userId);
+	void deleteUser(@PathVariable Long userId);
 
 	@GetMapping(USER_EMAIL_PATH)
-	String getUserEmail(Long userId);
+	String getUserEmail(@PathVariable Long userId);
 
 	@GetMapping(USER_EMAIL_PREFERENCES)
-	Boolean getUserEmailPreferences(Long userId);
+	Boolean getUserEmailPreferences(@PathVariable Long userId);
 
 	@PutMapping(USER_EMAIL_PREFERENCES)
-	void updateUserEmailPreferenves(Long userId, Boolean allowsEmail);
+	void updateUserEmailPreferences(@PathVariable Long userId, Boolean allowsEmail);
 
 }

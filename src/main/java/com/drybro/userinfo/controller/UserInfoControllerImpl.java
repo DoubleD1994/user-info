@@ -39,8 +39,8 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@Override
 	@GetMapping(value = ALL_USERS_PATH)
 	public List<UserInfo> getAllUsers() {
-		List<UserInfo> users = new ArrayList<>();
-		userRepository.findAll().forEach( user -> users.add( user ) );
+		final List<UserInfo> users = new ArrayList<>();
+		userRepository.findAll().forEach( users::add );
 		return users;
 	}
 

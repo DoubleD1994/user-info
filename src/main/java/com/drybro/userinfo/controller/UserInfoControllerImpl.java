@@ -70,7 +70,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	public void updateUser( @PathVariable final Long userId,
 			@RequestBody final UserInfo updatedUserInfo ) {
-		UserInfo user = findUserById( userId );
+		final UserInfo user = findUserById( userId );
 		updateUserInfo( user, updatedUserInfo );
 		log.info( "USER WITH ID {} UPDATED", userId );
 	}
@@ -100,7 +100,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@ResponseStatus(HttpStatus.ACCEPTED)
 	public void updateUserEmailPreferenves( @PathVariable final Long userId,
 			@RequestParam final Boolean allowsEmail ) {
-		UserInfo user = findUserById( userId );
+		final UserInfo user = findUserById( userId );
 		user.setAllowsEmail( allowsEmail );
 		userRepository.save( user );
 		log.info( "USER WITH ID {} EMAIL PREFERENCES UPDATED: {}", userId, allowsEmail );
@@ -109,7 +109,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	private UserInfo findUserById(final Long userId) {
 		try {
 			return userRepository.findById( userId ).orElseThrow();
-		} catch ( NoSuchElementException nsee ) {
+		} catch ( final NoSuchElementException nsee ) {
 			throw new ResponseStatusException( HttpStatus.NOT_FOUND,
 					"User with ID " + userId + "  not found", nsee );
 		}
@@ -118,7 +118,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	private UserInfo findUserByEmail(final String email) {
 		try {
 			return userRepository.findUserInfoByEmail( email ).orElseThrow();
-		} catch ( NoSuchElementException nsee ) {
+		} catch ( final NoSuchElementException nsee ) {
 			throw new ResponseStatusException( HttpStatus.NOT_FOUND,
 					"No user found with email address: " + email, nsee );
 		}

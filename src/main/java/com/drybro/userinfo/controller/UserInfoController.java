@@ -14,7 +14,7 @@ public interface UserInfoController {
 	String USER_INFO_PATH = "/user-info";
 	String ALL_USERS_PATH = "/all-users";
 
-	String USER_ID_PATH = "/{userIid}";
+	String USER_ID_PATH = "/{userId}";
 
 	String USER_EMAIL_PATH = "/{userId}/email";
 

@@ -3,4 +3,4 @@ spring:
     generate-unique-name: false
     name: user-info
 server:
-  port: 8080
+  port: 8081

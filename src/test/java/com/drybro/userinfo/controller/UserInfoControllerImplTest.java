@@ -2,13 +2,16 @@ package com.drybro.userinfo.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.drybro.userinfo.model.UserInfo;
 import com.drybro.userinfo.repository.UserRepository;
 
+import jakarta.validation.ConstraintViolationException;
 
 @SpringBootTest
 public class UserInfoControllerImplTest {
@@ -54,7 +58,8 @@ public class UserInfoControllerImplTest {
 	@Test
 	void getAllUsers_HappyPath() {
 		when( userRepository.findAll() ).thenReturn( userInfoList );
-		final List<UserInfo> returnedUserInfoList = userInfoController.getAllUsers();
+		final Set<UserInfo> returnedUserInfoList = userInfoController.getAllUsers().getBody()
+				.getUserInfoSet();
 		assertThat( returnedUserInfoList.size() ).isEqualTo( 3 );
 		assertThat( returnedUserInfoList ).contains( userInfoOne );
 		assertThat( returnedUserInfoList ).contains( userInfoTwo );
@@ -64,14 +69,16 @@ public class UserInfoControllerImplTest {
 	@Test
 	void getAllUsers_HappyPathEmptyList() {
 		when( userRepository.findAll() ).thenReturn( new ArrayList<>() );
-		final List<UserInfo> returnedUserInfoList = userInfoController.getAllUsers();
+		final Set<UserInfo> returnedUserInfoList = userInfoController.getAllUsers().getBody()
+				.getUserInfoSet();
 		assertThat( returnedUserInfoList.size() ).isEqualTo( 0 );
 	}
 
 	@Test
 	void createUser_HappyPath() {
-		userInfoController.createUser( userInfoOne );
+		final boolean isSuccess = userInfoController.createUser( userInfoOne ).getBody().isSuccess();
 		verify( userRepository, times( 1 ) ).save( userInfoOne );
+		assertTrue( isSuccess );
 	}
 
 	@Test
@@ -82,7 +89,7 @@ public class UserInfoControllerImplTest {
 
 	@Test
 	void createUser_NullUserFirstNameThrowsExcpetion() {
-		assertThrows( NullPointerException.class, () -> userInfoController.createUser(
+		assertThrows( ConstraintViolationException.class, () -> userInfoController.createUser(
 				new UserInfo( 1l, null, "one", "userone@email.com", "password", true ) ) );
 	}
 
@@ -90,26 +97,27 @@ public class UserInfoControllerImplTest {
 	void getUserByEmail_HappyPath() {
 		when( userRepository.findUserInfoByEmail( userInfoOne.getEmail() ) ).thenReturn(
 				Optional.of( userInfoOne ) );
-		UserInfo returnedUser = userInfoController.getUserByEmail( userInfoOne.getEmail() );
+		final UserInfo returnedUser = userInfoController.getUserByEmail( userInfoOne.getEmail() ).getBody()
+				.getUserInfo();
 		verify( userRepository, times(1) ).findUserInfoByEmail( userInfoOne.getEmail() );
 		assertThat( returnedUser.getId() ).isEqualTo( userInfoOne.getId() );
 	}
 
 	@Test
 	void getUserByEmail_UserNotFoundThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( NoSuchElementException.class,
 				() -> userInfoController.getUserByEmail( "notauser@email.com" ) );
 	}
 
 	@Test
 	void getUserByEmail_NullPassedForEmailThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( ConstraintViolationException.class,
 				() -> userInfoController.getUserByEmail( null ) );
 	}
 
 	@Test
 	void getUserByEmail_EmptyStringForEmailThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( ConstraintViolationException.class,
 				() -> userInfoController.getUserByEmail( "" ) );
 	}
 
@@ -117,20 +125,21 @@ public class UserInfoControllerImplTest {
 	void getUserById_HappyPath() {
 		when( userRepository.findById( userInfoOne.getId() ) ).thenReturn(
 				Optional.of( userInfoOne ) );
-		UserInfo returnedUser = userInfoController.getUserById( userInfoOne.getId() );
+		final UserInfo returnedUser = userInfoController.getUserById( userInfoOne.getId() ).getBody()
+				.getUserInfo();
 		verify( userRepository, times(1) ).findById( userInfoOne.getId() );
 		assertThat( returnedUser.getId() ).isEqualTo( userInfoOne.getId() );
 	}
 
 	@Test
 	void getUserById_UserNotFoundThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( NoSuchElementException.class,
 				() -> userInfoController.getUserById( 5l ) );
 	}
 
 	@Test
 	void getUserById_NullValueThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( NoSuchElementException.class,
 				() -> userInfoController.getUserById( null ) );
 	}
 
@@ -139,7 +148,7 @@ public class UserInfoControllerImplTest {
 		when( userRepository.findById( userInfoOne.getId() ) ).thenReturn(
 				Optional.of( userInfoOne ) );
 
-		UserInfo updateUserInfo = userInfoOne;
+		final UserInfo updateUserInfo = userInfoOne;
 		updateUserInfo.setFirstName( "Updated" );
 		updateUserInfo.setSurname( "Name" );
 
@@ -151,7 +160,7 @@ public class UserInfoControllerImplTest {
 
 	@Test
 	void updateUser_UserNotFoundThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( ConstraintViolationException.class,
 				() -> userInfoController.updateUser( 5l, new UserInfo() ) );
 	}
 
@@ -165,13 +174,13 @@ public class UserInfoControllerImplTest {
 	void getUserEmail_HappyPath() {
 		when(userRepository.findById( userInfoOne.getId() )).thenReturn( Optional.of( userInfoOne ) );
 
-		String returnedEmail = userInfoController.getUserEmail( userInfoOne.getId() );
+		final String returnedEmail = userInfoController.getUserEmail( userInfoOne.getId() ).getBody();
 		assertThat( returnedEmail ).isEqualTo( userInfoOne.getEmail() );
 	}
 
 	@Test
 	void getUserEmail_UserNotFoundThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( NoSuchElementException.class,
 				() -> userInfoController.getUserEmail( 5l ) );
 	}
 
@@ -179,13 +188,13 @@ public class UserInfoControllerImplTest {
 	void getUserEmailPreferences_HappyPath() {
 		when(userRepository.findById( userInfoOne.getId() )).thenReturn( Optional.of( userInfoOne ) );
 
-		Boolean returnedEmailPreferences = userInfoController.getUserEmailPreferences( userInfoOne.getId() );
+		final boolean returnedEmailPreferences = userInfoController.getUserEmailPreferences( userInfoOne.getId() ).getBody();
 		assertThat( returnedEmailPreferences ).isEqualTo( userInfoOne.getAllowsEmail() );
 	}
 
 	@Test
 	void getUserEmailPreferences_UserNotFoundThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( NoSuchElementException.class,
 				() -> userInfoController.getUserEmailPreferences( 5l ) );
 	}
 
@@ -193,7 +202,7 @@ public class UserInfoControllerImplTest {
 	void updateUserEmailPreferences_HappyPath() {
 		when(userRepository.findById( userInfoOne.getId() )).thenReturn( Optional.of( userInfoOne ) );
 
-		UserInfo updatedUserInfo = userInfoOne;
+		final UserInfo updatedUserInfo = userInfoOne;
 		updatedUserInfo.setAllowsEmail( false );
 
 		userInfoController.updateUserEmailPreferences(userInfoOne.getId(), false);
@@ -204,7 +213,7 @@ public class UserInfoControllerImplTest {
 
 	@Test
 	void updateUserEmailPreferences_UserNotFoundThrowsResponseStatusException() {
-		assertThrows( ResponseStatusException.class,
+		assertThrows( NoSuchElementException.class,
 				() -> userInfoController.updateUserEmailPreferences( 5l, false ) );
 	}
 

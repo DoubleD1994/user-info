@@ -1,26 +1,20 @@
 package com.drybro.userinfo.controller;
 
-import static com.drybro.userinfo.controller.UserInfoController.USER_INFO_PATH;
-
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.drybro.userinfo.model.UserInfo;
+import com.drybro.userinfo.model.UserInfoResponse;
 import com.drybro.userinfo.repository.UserRepository;
 import com.drybro.userinfo.service.PasswordGeneratorService;
 
@@ -29,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Validated
 @RestController
-@RequestMapping(path = USER_INFO_PATH, produces = "application/json")
 @AllArgsConstructor
 @Slf4j
 public class UserInfoControllerImpl implements UserInfoController {
@@ -37,90 +30,126 @@ public class UserInfoControllerImpl implements UserInfoController {
 	private final UserRepository userRepository;
 
 	@Override
-	@GetMapping(value = ALL_USERS_PATH)
-	public List<UserInfo> getAllUsers() {
-		final List<UserInfo> users = new ArrayList<>();
+	public ResponseEntity<UserInfoResponse> getAllUsers() {
+		final Set<UserInfo> users = new HashSet<>();
 		userRepository.findAll().forEach( users::add );
-		return users;
+		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+				.userInfoSet( users )
+				.isSuccess( true )
+				.build();
+		return new ResponseEntity<>( userInfoResponse, HttpStatus.OK );
 	}
 
 	@Override
-	@PostMapping()
-	@ResponseStatus(HttpStatus.CREATED)
-	public void createUser( @RequestBody final UserInfo userInfo ) {
+	public ResponseEntity<UserInfoResponse> createUser( final UserInfo userInfo ) {
 		userInfo.setPassword( PasswordGeneratorService.generatePassword() );
 		userRepository.save( userInfo );
-		log.info( "USER CREATED: {}", userInfo );
+		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.CREATED );
 	}
 
 	@Override
-	@GetMapping()
-	public UserInfo getUserByEmail(@RequestParam final String email) {
-		return findUserByEmail(email);
+	public ResponseEntity<UserInfoResponse> getUserByEmail( final String email ) {
+		final UserInfo userInfo = findUserByEmail( email );
+		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+				.userInfo( userInfo )
+				.isSuccess( true )
+				.build();
+		return new ResponseEntity<>( userInfoResponse, HttpStatus.OK );
 	}
 
 	@Override
-	@GetMapping(value = USER_ID_PATH)
-	public UserInfo getUserById( @PathVariable final Long userId ) {
-		return findUserById( userId );
+	public ResponseEntity<UserInfoResponse> getUserById( final Long userId ) {
+		final UserInfo userInfo = findUserById( userId );
+		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+				.userInfo( userInfo )
+				.isSuccess( true )
+				.build();
+		return new ResponseEntity<>( userInfoResponse, HttpStatus.OK );
 	}
 
 	@Override
-	@PutMapping(USER_ID_PATH)
-	@ResponseStatus(HttpStatus.ACCEPTED)
-	public void updateUser( @PathVariable final Long userId,
-			@RequestBody final UserInfo updatedUserInfo ) {
+	public ResponseEntity<UserInfoResponse> updateUser( final Long userId,
+			final UserInfo updatedUserInfo ) {
 		final UserInfo user = findUserById( userId );
 		updateUserInfo( user, updatedUserInfo );
-		log.info( "USER WITH ID {} UPDATED", userId );
+		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.ACCEPTED );
 	}
 
 	@Override
-	@DeleteMapping(USER_ID_PATH)
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void deleteUser( @PathVariable final Long userId ) {
+	public ResponseEntity<UserInfoResponse> deleteUser( final Long userId ) {
 		userRepository.deleteById( userId );
-		log.info( "USER DELETED {}", userId );
+		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.ACCEPTED );
 	}
 
 	@Override
-	@GetMapping(value = USER_EMAIL_PATH)
-	public String getUserEmail( @PathVariable final Long userId ) {
-		return findUserById( userId ).getEmail();
+	public ResponseEntity<String> getUserEmail( final Long userId ) {
+		final String userEmail = findUserById( userId ).getEmail();
+		return new ResponseEntity<>( userEmail, HttpStatus.OK );
 	}
 
 	@Override
-	@GetMapping(value = USER_EMAIL_PREFERENCES)
-	public Boolean getUserEmailPreferences( @PathVariable final Long userId ) {
-		return findUserById( userId ).getAllowsEmail();
+	public ResponseEntity<Boolean> getUserEmailPreferences( final Long userId ) {
+		final Boolean userEmailPreferences = findUserById( userId ).getAllowsEmail();
+		return new ResponseEntity<>( userEmailPreferences, HttpStatus.OK );
 	}
 
 	@Override
-	@PutMapping(value = USER_EMAIL_PREFERENCES)
-	@ResponseStatus(HttpStatus.ACCEPTED)
-	public void updateUserEmailPreferences( @PathVariable final Long userId,
-			@RequestParam final Boolean allowsEmail ) {
+	public ResponseEntity<UserInfoResponse> updateUserEmailPreferences( final Long userId,
+			final Boolean allowsEmail ) {
 		final UserInfo user = findUserById( userId );
 		user.setAllowsEmail( allowsEmail );
 		userRepository.save( user );
-		log.info( "USER WITH ID {} EMAIL PREFERENCES UPDATED: {}", userId, allowsEmail );
+		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.ACCEPTED );
 	}
 
-	private UserInfo findUserById(final Long userId) {
+	@Override
+	public ResponseEntity<UserInfoResponse> handleValidationExceptions(
+			final MethodArgumentNotValidException methodArgumentNotValidException ) {
+		final List<String> errorsList = new ArrayList<>();
+
+		methodArgumentNotValidException.getBindingResult()
+				.getAllErrors()
+				.forEach( error -> errorsList.add( error.getDefaultMessage() ) );
+
+		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+				.isSuccess( false )
+				.errors( errorsList )
+				.requestDetails( methodArgumentNotValidException.getTarget() )
+				.build();
+
+		log.error( "The request {} was not valid - {}", methodArgumentNotValidException.getTarget(),
+				errorsList, methodArgumentNotValidException );
+
+		return new ResponseEntity<>( userInfoResponse, HttpStatus.BAD_REQUEST );
+	}
+
+	@Override
+	public ResponseEntity<UserInfoResponse> handleNotFoundExceptions(
+			final NoSuchElementException noSuchElementException ) {
+		final List<String> errorsList = Collections.singletonList(noSuchElementException.getMessage());
+
+		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+				.isSuccess( false )
+				.errors( errorsList )
+				.build();
+
+		return new ResponseEntity<>( userInfoResponse, HttpStatus.NOT_FOUND );
+	}
+
+
+	private UserInfo findUserById( final Long userId ) {
 		try {
 			return userRepository.findById( userId ).orElseThrow();
 		} catch ( final NoSuchElementException nsee ) {
-			throw new ResponseStatusException( HttpStatus.NOT_FOUND,
-					"User with ID " + userId + "  not found", nsee );
+			throw new NoSuchElementException( "User with ID " + userId + "  not found", nsee );
 		}
 	}
 
-	private UserInfo findUserByEmail(final String email) {
+	private UserInfo findUserByEmail( final String email ) {
 		try {
 			return userRepository.findUserInfoByEmail( email ).orElseThrow();
 		} catch ( final NoSuchElementException nsee ) {
-			throw new ResponseStatusException( HttpStatus.NOT_FOUND,
-					"No user found with email address: " + email, nsee );
+			throw new NoSuchElementException( "No user found with email address: " + email, nsee );
 		}
 	}
 
@@ -141,6 +170,10 @@ public class UserInfoControllerImpl implements UserInfoController {
 			userInfo.setAllowsEmail( updatedUserInfo.getAllowsEmail() );
 		}
 		userRepository.save( userInfo );
+	}
+
+	private UserInfoResponse baseSuccessfulResponse() {
+		return UserInfoResponse.builder().isSuccess( true ).build();
 	}
 
 }

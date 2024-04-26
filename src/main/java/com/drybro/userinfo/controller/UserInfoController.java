@@ -1,23 +1,20 @@
 package com.drybro.userinfo.controller;
 
-import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +24,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.servers.Server;
 
 import com.drybro.userinfo.model.UserInfo;
+import com.drybro.userinfo.model.UserInfoResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -56,14 +54,14 @@ public interface UserInfoController {
 	@Operation(operationId = "getAllUsers", summary = "Returns a list of all users")
 	@ApiResponse(responseCode = "200")
 	@GetMapping(value = ALL_USERS_PATH, produces = { APPLICATION_JSON })
-	List<UserInfo> getAllUsers();
+	ResponseEntity<UserInfoResponse> getAllUsers();
 
 	@Operation(operationId = "createUser", summary = "Creates a users")
 	@ApiResponses(value = { @ApiResponse(responseCode = "201", description = "User created"),
 							@ApiResponse(responseCode = "400",
 									description = "The user info provided was not valid") })
 	@PostMapping(CREATE_USER_PATH)
-	void createUser( @Valid @RequestBody UserInfo userInfo ) throws BadRequestException;
+	ResponseEntity<UserInfoResponse>  createUser( @Valid @RequestBody UserInfo userInfo );
 
 	@Operation(operationId = "getUserByEmail", summary = "Gets a user by their email address")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "User found"),
@@ -72,7 +70,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the email provided") })
 	@GetMapping(value = GET_USER_BY_EMAIL_PATH, produces = { APPLICATION_JSON })
-	UserInfo getUserByEmail( @RequestParam @Email(message = "Email is not valid",
+	ResponseEntity<UserInfoResponse>  getUserByEmail( @RequestParam @Email(message = "Email is not valid",
 			regexp = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$") @NotEmpty String email );
 
 	@Operation(operationId = "getUserById", summary = "Gets a user by their id")
@@ -82,7 +80,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@GetMapping(value = USER_BY_ID_PATH, produces = { APPLICATION_JSON })
-	UserInfo getUserById( @RequestParam @Positive Long userId );
+	ResponseEntity<UserInfoResponse>  getUserById( @RequestParam @Positive Long userId );
 
 	@Operation(operationId = "updateUser", summary = "Updates a users details")
 	@ApiResponses(value = { @ApiResponse(responseCode = "202", description = "User updated"),
@@ -91,7 +89,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@PutMapping(USER_BY_ID_PATH)
-	void updateUser( @RequestParam @Positive Long userId, @Valid @RequestBody UserInfo userInfo );
+	ResponseEntity<UserInfoResponse>  updateUser( @RequestParam @Positive Long userId, @Valid @RequestBody UserInfo userInfo );
 
 	@Operation(operationId = "deleteUser", summary = "Deletes a user")
 	@ApiResponses(value = { @ApiResponse(responseCode = "202", description = "User deleted"),
@@ -100,7 +98,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@DeleteMapping(USER_BY_ID_PATH)
-	void deleteUser( @RequestParam @Positive Long userId );
+	ResponseEntity<UserInfoResponse> deleteUser( @RequestParam @Positive Long userId );
 
 	@Operation(operationId = "getUserEmail", summary = "Gets a users email")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Found users email"),
@@ -109,7 +107,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@GetMapping(value = GET_USER_EMAIL_PATH, produces = { APPLICATION_JSON })
-	String getUserEmail( @RequestParam @Positive Long userId );
+	ResponseEntity<String>  getUserEmail( @RequestParam @Positive Long userId );
 
 	@Operation(operationId = "getUserEmailPreferences", summary = "Gets a users email preferences")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Found users email preferences"),
@@ -118,7 +116,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@GetMapping(value = USER_EMAIL_PREFERENCES, produces = { APPLICATION_JSON })
-	Boolean getUserEmailPreferences( @RequestParam @Positive Long userId );
+	ResponseEntity<Boolean>  getUserEmailPreferences( @RequestParam @Positive Long userId );
 
 	@Operation(operationId = "updateUserEmailPreferences", summary = "Updates a users email preferences")
 	@ApiResponses(value = { @ApiResponse(responseCode = "202", description = "Found users email preferences"),
@@ -127,17 +125,14 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@PutMapping(USER_EMAIL_PREFERENCES)
-	void updateUserEmailPreferences( @RequestParam @Positive Long userId, @RequestBody Boolean allowsEmail );
+	ResponseEntity<UserInfoResponse>  updateUserEmailPreferences( @RequestParam @Positive Long userId, @RequestBody Boolean allowsEmail );
 
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException methodArgumentNotValidException);
 
 	@ResponseStatus(HttpStatus.NOT_FOUND)
-	@ExceptionHandler(NoResourceFoundException.class)
-	ResponseEntity<?> handleNotFoundExceptions(NoResourceFoundException noResourceFoundException);
-	
-	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	@ExceptionHandler(BadRequestException.class)
-	ResponseEntity<?> handleBadRequestExceptions(BadRequestException badRequestException);
+	@ExceptionHandler(NoSuchElementException.class)
+	ResponseEntity<?> handleNotFoundExceptions(NoSuchElementException noResourceFoundException);
+
 }

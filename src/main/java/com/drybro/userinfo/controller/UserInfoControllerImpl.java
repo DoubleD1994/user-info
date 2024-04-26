@@ -18,6 +18,7 @@ import com.drybro.userinfo.model.UserInfoResponse;
 import com.drybro.userinfo.repository.UserRepository;
 import com.drybro.userinfo.service.PasswordGeneratorService;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -103,7 +104,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 	}
 
 	@Override
-	public ResponseEntity<UserInfoResponse> handleValidationExceptions(
+	public ResponseEntity<UserInfoResponse> handleMethodArgumentNotValidExceptions(
 			final MethodArgumentNotValidException methodArgumentNotValidException ) {
 		final List<String> errorsList = new ArrayList<>();
 
@@ -124,6 +125,21 @@ public class UserInfoControllerImpl implements UserInfoController {
 	}
 
 	@Override
+	public ResponseEntity<UserInfoResponse> handleConstraintValidationExceptions(
+			final ConstraintViolationException constraintViolationException ) {
+		final List<String> errorsList = Collections.singletonList(constraintViolationException.getMessage());
+		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
+				.isSuccess( false )
+				.errors( errorsList )
+				.requestDetails( constraintViolationException.getConstraintViolations() )
+				.build();
+
+		log.error( "The request was not valid - {}", constraintViolationException.getMessage()
+				, constraintViolationException );
+		return new ResponseEntity<>( userInfoResponse, HttpStatus.BAD_REQUEST );
+	}
+
+	@Override
 	public ResponseEntity<UserInfoResponse> handleNotFoundExceptions(
 			final NoSuchElementException noSuchElementException ) {
 		final List<String> errorsList = Collections.singletonList(noSuchElementException.getMessage());
@@ -132,6 +148,8 @@ public class UserInfoControllerImpl implements UserInfoController {
 				.isSuccess( false )
 				.errors( errorsList )
 				.build();
+
+		log.error( "404 Not Found - {}", errorsList, noSuchElementException );
 
 		return new ResponseEntity<>( userInfoResponse, HttpStatus.NOT_FOUND );
 	}

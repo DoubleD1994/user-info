@@ -2,7 +2,6 @@ package com.drybro.userinfo.controller;
 
 import java.util.NoSuchElementException;
 
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -26,6 +25,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
 import com.drybro.userinfo.model.UserInfo;
 import com.drybro.userinfo.model.UserInfoResponse;
 
+import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
@@ -80,7 +80,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@GetMapping(value = USER_BY_ID_PATH, produces = { APPLICATION_JSON })
-	ResponseEntity<UserInfoResponse>  getUserById( @RequestParam @Positive Long userId );
+	ResponseEntity<UserInfoResponse>  getUserById( @RequestParam Long userId );
 
 	@Operation(operationId = "updateUser", summary = "Updates a users details")
 	@ApiResponses(value = { @ApiResponse(responseCode = "202", description = "User updated"),
@@ -89,7 +89,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@PutMapping(USER_BY_ID_PATH)
-	ResponseEntity<UserInfoResponse>  updateUser( @RequestParam @Positive Long userId, @Valid @RequestBody UserInfo userInfo );
+	ResponseEntity<UserInfoResponse>  updateUser( @RequestParam Long userId, @Valid @RequestBody UserInfo userInfo );
 
 	@Operation(operationId = "deleteUser", summary = "Deletes a user")
 	@ApiResponses(value = { @ApiResponse(responseCode = "202", description = "User deleted"),
@@ -98,7 +98,7 @@ public interface UserInfoController {
 							@ApiResponse(responseCode = "404",
 									description = "No user found with the ID provided") })
 	@DeleteMapping(USER_BY_ID_PATH)
-	ResponseEntity<UserInfoResponse> deleteUser( @RequestParam @Positive Long userId );
+	ResponseEntity<UserInfoResponse> deleteUser( @RequestParam Long userId );
 
 	@Operation(operationId = "getUserEmail", summary = "Gets a users email")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Found users email"),
@@ -129,10 +129,14 @@ public interface UserInfoController {
 
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	@ExceptionHandler(MethodArgumentNotValidException.class)
-	ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException methodArgumentNotValidException);
+	ResponseEntity<UserInfoResponse> handleMethodArgumentNotValidExceptions(MethodArgumentNotValidException methodArgumentNotValidException);
+
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	@ExceptionHandler(ConstraintViolationException.class)
+	ResponseEntity<UserInfoResponse> handleConstraintValidationExceptions(ConstraintViolationException constraintViolationException);
 
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	@ExceptionHandler(NoSuchElementException.class)
-	ResponseEntity<?> handleNotFoundExceptions(NoSuchElementException noResourceFoundException);
+	ResponseEntity<UserInfoResponse> handleNotFoundExceptions(NoSuchElementException noResourceFoundException);
 
 }

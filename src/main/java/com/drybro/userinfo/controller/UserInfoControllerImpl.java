@@ -2,7 +2,6 @@ package com.drybro.userinfo.controller;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -15,8 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.drybro.userinfo.model.UserInfo;
 import com.drybro.userinfo.model.UserInfoResponse;
-import com.drybro.userinfo.repository.UserRepository;
-import com.drybro.userinfo.service.PasswordGeneratorService;
+import com.drybro.userinfo.service.UserService;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.AllArgsConstructor;
@@ -28,12 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UserInfoControllerImpl implements UserInfoController {
 
-	private final UserRepository userRepository;
+	private final UserService userService;
 
 	@Override
 	public ResponseEntity<UserInfoResponse> getAllUsers() {
-		final Set<UserInfo> users = new HashSet<>();
-		userRepository.findAll().forEach( users::add );
+		final Set<UserInfo> users = userService.returnAllUsersAsSet();
 		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
 				.userInfoSet( users )
 				.isSuccess( true )
@@ -43,14 +40,13 @@ public class UserInfoControllerImpl implements UserInfoController {
 
 	@Override
 	public ResponseEntity<UserInfoResponse> createUser( final UserInfo userInfo ) {
-		userInfo.setPassword( PasswordGeneratorService.generatePassword() );
-		userRepository.save( userInfo );
+		userService.saveUserInDatabase( userInfo );
 		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.CREATED );
 	}
 
 	@Override
 	public ResponseEntity<UserInfoResponse> getUserByEmail( final String email ) {
-		final UserInfo userInfo = findUserByEmail( email );
+		final UserInfo userInfo = userService.findUserByEmail( email );
 		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
 				.userInfo( userInfo )
 				.isSuccess( true )
@@ -60,7 +56,7 @@ public class UserInfoControllerImpl implements UserInfoController {
 
 	@Override
 	public ResponseEntity<UserInfoResponse> getUserById( final Long userId ) {
-		final UserInfo userInfo = findUserById( userId );
+		final UserInfo userInfo = userService.findUserById( userId );
 		final UserInfoResponse userInfoResponse = UserInfoResponse.builder()
 				.userInfo( userInfo )
 				.isSuccess( true )
@@ -71,35 +67,32 @@ public class UserInfoControllerImpl implements UserInfoController {
 	@Override
 	public ResponseEntity<UserInfoResponse> updateUser( final Long userId,
 			final UserInfo updatedUserInfo ) {
-		final UserInfo user = findUserById( userId );
-		updateUserInfo( user, updatedUserInfo );
+		userService.updateUserInfo( userId, updatedUserInfo );
 		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.ACCEPTED );
 	}
 
 	@Override
 	public ResponseEntity<UserInfoResponse> deleteUser( final Long userId ) {
-		userRepository.deleteById( userId );
+		userService.deleteUserInfo( userId );
 		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.ACCEPTED );
 	}
 
 	@Override
 	public ResponseEntity<String> getUserEmail( final Long userId ) {
-		final String userEmail = findUserById( userId ).getEmail();
+		final String userEmail = userService.findUserById( userId ).getEmail();
 		return new ResponseEntity<>( userEmail, HttpStatus.OK );
 	}
 
 	@Override
 	public ResponseEntity<Boolean> getUserEmailPreferences( final Long userId ) {
-		final Boolean userEmailPreferences = findUserById( userId ).getAllowsEmail();
+		final Boolean userEmailPreferences = userService.findUserById( userId ).getAllowsEmail();
 		return new ResponseEntity<>( userEmailPreferences, HttpStatus.OK );
 	}
 
 	@Override
 	public ResponseEntity<UserInfoResponse> updateUserEmailPreferences( final Long userId,
 			final Boolean allowsEmail ) {
-		final UserInfo user = findUserById( userId );
-		user.setAllowsEmail( allowsEmail );
-		userRepository.save( user );
+		userService.updateUserInfoEmailPreferences( userId, allowsEmail );
 		return new ResponseEntity<>( baseSuccessfulResponse(), HttpStatus.ACCEPTED );
 	}
 
@@ -154,41 +147,6 @@ public class UserInfoControllerImpl implements UserInfoController {
 		return new ResponseEntity<>( userInfoResponse, HttpStatus.NOT_FOUND );
 	}
 
-
-	private UserInfo findUserById( final Long userId ) {
-		try {
-			return userRepository.findById( userId ).orElseThrow();
-		} catch ( final NoSuchElementException nsee ) {
-			throw new NoSuchElementException( "User with ID " + userId + "  not found", nsee );
-		}
-	}
-
-	private UserInfo findUserByEmail( final String email ) {
-		try {
-			return userRepository.findUserInfoByEmail( email ).orElseThrow();
-		} catch ( final NoSuchElementException nsee ) {
-			throw new NoSuchElementException( "No user found with email address: " + email, nsee );
-		}
-	}
-
-	private void updateUserInfo( final UserInfo userInfo, final UserInfo updatedUserInfo ) {
-		if ( !updatedUserInfo.getFirstName().isBlank() ) {
-			userInfo.setFirstName( updatedUserInfo.getFirstName() );
-		}
-		if ( !updatedUserInfo.getSurname().isBlank() ) {
-			userInfo.setSurname( updatedUserInfo.getSurname() );
-		}
-		if ( !updatedUserInfo.getEmail().isBlank() ) {
-			userInfo.setEmail( updatedUserInfo.getEmail() );
-		}
-		if ( !updatedUserInfo.getPassword().isBlank() ) {
-			userInfo.setPassword( updatedUserInfo.getPassword() );
-		}
-		if ( !updatedUserInfo.getAllowsEmail().toString().isBlank() ) {
-			userInfo.setAllowsEmail( updatedUserInfo.getAllowsEmail() );
-		}
-		userRepository.save( userInfo );
-	}
 
 	private UserInfoResponse baseSuccessfulResponse() {
 		return UserInfoResponse.builder().isSuccess( true ).build();
